@@ -5,20 +5,17 @@ use super::{context::context::Context, event_origin::EventOrigin};
 
 /// Representation of an event within the bus.
 #[derive(Debug, FromPyObject)]
-pub struct Event<Type, Data> {
+pub struct Event<Type, Data, Context> {
     pub event_type: Type,
     pub data: Data,
     pub origin: EventOrigin,
-    /// In order to prevent cycles, the user must extract this to a [`Context`](super::context::Context) themself, using the [`context`](Self::context) method
-    context: Py<PyAny>,
+    /// In order to prevent cycles, the user must decide to pass [`Py<PyAny>`] for the `Context` type here
+    /// or for the `Event` type in [`Context`]
+    pub context: Context,
     time_fired_timestamp: f64,
 }
 
-impl<Type, Data> Event<Type, Data> {
-    pub fn context<'py>(&self, py: Python<'py>) -> PyResult<Context> {
-        self.context.extract(py)
-    }
-
+impl<Type, Data, Context> Event<Type, Data, Context> {
     pub fn time_fired(&self) -> Option<DateTime<Utc>> {
         const NANOS_PER_SEC: i32 = 1_000_000_000;
 

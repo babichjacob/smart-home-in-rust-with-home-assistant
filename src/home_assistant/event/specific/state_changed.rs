@@ -24,11 +24,12 @@ impl<'py> FromPyObject<'py> for Type {
 
 #[derive(Debug, FromPyObject)]
 #[pyo3(from_item_all)]
-pub struct Data {
+pub struct Data<OldStateContextEvent, NewStateContextEvent> {
     pub entity_id: EntityId,
-    pub old_state: Option<State>,
-    pub new_state: Option<State>,
+    pub old_state: Option<State<OldStateContextEvent>>,
+    pub new_state: Option<State<NewStateContextEvent>>,
 }
 
 /// A state changed event is fired when on state write the state is changed.
-pub type Event = super::super::event::Event<Type, Data>;
+pub type Event<OldStateContextEvent, NewStateContextEvent, Context> =
+    super::super::event::Event<Type, Data<OldStateContextEvent, NewStateContextEvent>, Context>;
