@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use pyo3::prelude::*;
 
-use super::{context::context::Context, event_origin::EventOrigin};
+use super::event_origin::EventOrigin;
 
 /// Representation of an event within the bus.
 #[derive(Debug, FromPyObject)]
