@@ -1,27 +1,42 @@
 use std::time::Duration;
 
+use home_assistant::home_assistant::HomeAssistant;
 use pyo3::prelude::*;
 use tokio::time::interval;
+use tracing::Level;
+use tracing_subscriber::fmt::format::FmtSpan;
 
-async fn real_main() -> ! {
-    let duration = Duration::from_millis(400);
+mod arbitrary;
+mod home_assistant;
+mod python_utils;
+
+async fn real_main(home_assistant: HomeAssistant) -> ! {
+    tracing_subscriber::fmt()
+        .with_max_level(Level::TRACE)
+        .with_span_events(FmtSpan::ACTIVE)
+        .pretty()
+        .init();
+
+    let duration = Duration::from_millis(5900);
     let mut interval = interval(duration);
 
     loop {
         let instant = interval.tick().await;
 
-        println!("it is now {instant:?}");
+        tracing::debug!(?instant, "it is now");
     }
 }
 
 #[pyfunction]
-fn main(py: Python) -> PyResult<&PyAny> {
-    pyo3_asyncio::tokio::future_into_py(py, async { Ok(real_main().await) })
+fn main<'p>(py: Python<'p>, home_assistant: HomeAssistant) -> PyResult<Bound<'p, PyAny>> {
+    pyo3_async_runtimes::tokio::future_into_py::<_, ()>(py, async {
+        real_main(home_assistant).await;
+    })
 }
 
 /// A Python module implemented in Rust.
 #[pymodule]
-fn smart_home_in_rust_with_home_assistant(_py: Python, m: &PyModule) -> PyResult<()> {
+fn smart_home_in_rust_with_home_assistant(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(main, m)?)?;
     Ok(())
 }
