@@ -19,6 +19,7 @@ impl FromStr for ObjectId {
         for c in s.chars() {
             match c {
                 'a'..='z' => {}
+                '0'..='9' => {}
                 '_' => {}
                 _ => return Err(ObjectIdParsingError { encountered: c }),
             }
