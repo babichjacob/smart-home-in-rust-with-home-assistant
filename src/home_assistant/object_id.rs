@@ -7,7 +7,7 @@ use snafu::Snafu;
 pub struct ObjectId(Arc<str>);
 
 #[derive(Debug, Clone, Snafu)]
-#[snafu(display("expected a lowercase ASCII alphabetical character (i.e. a through z) or an underscore (i.e. _) but encountered {encountered}"))]
+#[snafu(display("expected a lowercase ASCII alphabetical character (i.e. a through z) or a digit (i.e. 0 through 9) or an underscore (i.e. _) but encountered {encountered}"))]
 pub struct ObjectIdParsingError {
     encountered: char,
 }
