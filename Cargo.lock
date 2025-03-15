@@ -587,6 +587,7 @@ checksum = "7778bffd85cf38175ac1f545509665d0b9b92a198ca7941f131f85f7a4f9a872"
 dependencies = [
  "cfg-if",
  "chrono",
+ "chrono-tz",
  "indoc",
  "libc",
  "memoffset",
