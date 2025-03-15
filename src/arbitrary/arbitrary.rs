@@ -4,6 +4,7 @@ use ijson::{IArray, INumber, IObject, IString, IValue};
 use pyo3::{
     exceptions::{PyTypeError, PyValueError},
     prelude::*,
+    types::{PyList, PyNone},
 };
 use snafu::Snafu;
 
@@ -86,6 +87,27 @@ impl<'py> FromPyObject<'py> for Arbitrary {
             Err(PyTypeError::new_err(format!(
                 "can't extract an arbitrary from a {type_name}"
             )))
+        }
+    }
+}
+
+impl<'py> IntoPyObject<'py> for Arbitrary {
+    type Target = PyAny;
+
+    type Output = Bound<'py, Self::Target>;
+
+    type Error = PyErr;
+
+    fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
+        match self {
+            Arbitrary::Null => Ok(PyNone::get(py).to_owned().into_any()),
+            Arbitrary::Bool(b) => Ok(b.into_pyobject(py)?.to_owned().into_any()),
+            Arbitrary::Integer(i) => Ok(i.into_pyobject(py)?.into_any()),
+            Arbitrary::Float(finite_f64) => Ok(finite_f64.into_pyobject(py)?.into_any()),
+            Arbitrary::String(s) => Ok(s.into_pyobject(py)?.into_any()),
+            Arbitrary::Array(vec) => Ok(PyList::new(py, vec)?.into_any()),
+            Arbitrary::Map(map) => Ok(map.into_pyobject(py)?.into_any()),
+            Arbitrary::DateTime(date_time) => Ok(date_time.into_pyobject(py)?.into_any()),
         }
     }
 }

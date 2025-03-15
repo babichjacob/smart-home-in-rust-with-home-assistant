@@ -1,6 +1,7 @@
+use pyo3::IntoPyObject;
 use snafu::Snafu;
 
-#[derive(Debug, Clone, derive_more::Into)]
+#[derive(Debug, Clone, derive_more::Into, IntoPyObject)]
 pub struct FiniteF64(f64);
 
 #[derive(Debug, Snafu)]

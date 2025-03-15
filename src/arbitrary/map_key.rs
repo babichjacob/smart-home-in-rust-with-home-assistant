@@ -4,7 +4,11 @@ use chrono::DateTime;
 use chrono_tz::Tz;
 use ijson::IString;
 use itertools::Itertools;
-use pyo3::{exceptions::PyTypeError, prelude::*, types::PyNone};
+use pyo3::{
+    exceptions::PyTypeError,
+    prelude::*,
+    types::{PyNone, PyTuple},
+};
 
 use super::arbitrary::{Arbitrary, MapKeyFromArbitraryError};
 
@@ -54,6 +58,25 @@ impl<'py> FromPyObject<'py> for MapKey {
             Err(PyTypeError::new_err(format!(
                 "can't extract a map key from a {type_name}"
             )))
+        }
+    }
+}
+
+impl<'py> IntoPyObject<'py> for MapKey {
+    type Target = PyAny;
+
+    type Output = Bound<'py, Self::Target>;
+
+    type Error = PyErr;
+
+    fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
+        match self {
+            MapKey::Null => Ok(PyNone::get(py).to_owned().into_any()),
+            MapKey::Bool(b) => Ok(b.into_pyobject(py)?.to_owned().into_any()),
+            MapKey::Integer(i) => Ok(i.into_pyobject(py)?.into_any()),
+            MapKey::String(s) => Ok(s.into_pyobject(py)?.into_any()),
+            MapKey::Tuple(vec) => Ok(PyTuple::new(py, vec)?.into_any()),
+            MapKey::DateTime(date_time) => Ok(date_time.into_pyobject(py)?.into_any()),
         }
     }
 }
