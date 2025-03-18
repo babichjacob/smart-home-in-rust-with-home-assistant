@@ -4,20 +4,32 @@ use home_assistant::home_assistant::HomeAssistant;
 use pyo3::prelude::*;
 use shadow_rs::shadow;
 use tokio::time::interval;
-use tracing::Level;
-use tracing_subscriber::fmt::format::FmtSpan;
+use tracing::{level_filters::LevelFilter, Level};
+use tracing_subscriber::{
+    fmt::{self, format::FmtSpan},
+    layer::SubscriberExt,
+    registry,
+    util::SubscriberInitExt,
+    Layer,
+};
+use tracing_to_home_assistant::TracingToHomeAssistant;
 
 mod arbitrary;
 mod home_assistant;
 mod python_utils;
+mod tracing_to_home_assistant;
 
 shadow!(build_info);
 
 async fn real_main(home_assistant: HomeAssistant) -> ! {
-    tracing_subscriber::fmt()
-        .with_max_level(Level::TRACE)
-        .with_span_events(FmtSpan::ACTIVE)
-        .pretty()
+    registry()
+        .with(
+            fmt::layer()
+                .pretty()
+                .with_span_events(FmtSpan::ACTIVE)
+                .with_filter(LevelFilter::from_level(Level::TRACE)),
+        )
+        .with(TracingToHomeAssistant)
         .init();
 
     let built_at = build_info::BUILD_TIME;
