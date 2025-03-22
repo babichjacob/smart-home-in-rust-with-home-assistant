@@ -1,6 +1,6 @@
-use std::{fmt::Display, str::FromStr};
+use std::{convert::Infallible, fmt::Display, str::FromStr};
 
-use pyo3::{exceptions::PyValueError, prelude::*};
+use pyo3::{exceptions::PyValueError, prelude::*, types::PyString};
 use snafu::{ResultExt, Snafu};
 
 use super::{
@@ -56,5 +56,16 @@ impl<'py> FromPyObject<'py> for EntityId {
         let entity_id = EntityId::from_str(s)?;
 
         Ok(entity_id)
+    }
+}
+
+impl<'py> IntoPyObject<'py> for &EntityId {
+    type Target = PyString;
+    type Output = Bound<'py, Self::Target>;
+    type Error = Infallible;
+
+    fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
+        let s = self.to_string();
+        s.into_pyobject(py)
     }
 }
