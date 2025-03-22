@@ -47,7 +47,7 @@ async fn real_main(home_assistant: HomeAssistant) -> ! {
 }
 
 #[pyfunction]
-fn main<'p>(py: Python<'p>, home_assistant: HomeAssistant) -> PyResult<Bound<'p, PyAny>> {
+fn main<'py>(py: Python<'py>, home_assistant: HomeAssistant) -> PyResult<Bound<'py, PyAny>> {
     pyo3_async_runtimes::tokio::future_into_py::<_, ()>(py, async {
         real_main(home_assistant).await;
     })

@@ -19,25 +19,25 @@ impl<'source> FromPyObject<'source> for HomeAssistant {
 
 impl HomeAssistant {
     /// Return the representation
-    pub fn repr(&self, py: &Python) -> Result<String, PyErr> {
-        let bound = self.0.bind(*py);
+    pub fn repr(&self, py: Python<'_>) -> Result<String, PyErr> {
+        let bound = self.0.bind(py);
         let repr = bound.repr()?;
         repr.extract()
     }
 
     /// Return if Home Assistant is running.
-    pub fn is_running(&self, py: &Python) -> Result<bool, PyErr> {
-        let is_running = self.0.getattr(*py, "is_running")?;
-        is_running.extract(*py)
+    pub fn is_running(&self, py: Python<'_>) -> Result<bool, PyErr> {
+        let is_running = self.0.getattr(py, "is_running")?;
+        is_running.extract(py)
     }
     /// Return if Home Assistant is stopping.
-    pub fn is_stopping(&self, py: &Python) -> Result<bool, PyErr> {
-        let is_stopping = self.0.getattr(*py, "is_stopping")?;
-        is_stopping.extract(*py)
+    pub fn is_stopping(&self, py: Python<'_>) -> Result<bool, PyErr> {
+        let is_stopping = self.0.getattr(py, "is_stopping")?;
+        is_stopping.extract(py)
     }
 
-    pub fn states(&self, py: &Python) -> Result<StateMachine, PyErr> {
-        let states = self.0.getattr(*py, "states")?;
-        states.extract(*py)
+    pub fn states(&self, py: Python<'_>) -> Result<StateMachine, PyErr> {
+        let states = self.0.getattr(py, "states")?;
+        states.extract(py)
     }
 }

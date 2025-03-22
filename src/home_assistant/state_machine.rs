@@ -23,11 +23,11 @@ impl<'py> FromPyObject<'py> for StateMachine {
 impl StateMachine {
     pub fn get<Attributes: for<'py> FromPyObject<'py>, ContextEvent: for<'py> FromPyObject<'py>>(
         &self,
-        py: &Python,
+        py: Python<'_>,
         entity_id: EntityId,
-    ) -> Result<Option<State<Attributes, ContextEvent>>, PyErr> {
+    ) -> PyResult<Option<State<Attributes, ContextEvent>>> {
         let args = (entity_id.to_string(),);
-        let state = self.0.call_method1(*py, "get", args)?;
-        state.extract(*py)
+        let state = self.0.call_method1(py, "get", args)?;
+        state.extract(py)
     }
 }
