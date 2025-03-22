@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 use pyo3::prelude::*;
 
 use crate::python_utils::{detach, validate_type_by_name};
@@ -14,6 +16,16 @@ impl<'source> FromPyObject<'source> for HomeAssistant {
         // endregion: Validation
 
         Ok(Self(detach(ob)))
+    }
+}
+
+impl<'py> IntoPyObject<'py> for &HomeAssistant {
+    type Target = PyAny;
+    type Output = Bound<'py, Self::Target>;
+    type Error = Infallible;
+
+    fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
+        Ok(self.0.bind(py).to_owned())
     }
 }
 
