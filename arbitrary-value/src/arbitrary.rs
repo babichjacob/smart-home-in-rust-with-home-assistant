@@ -1,6 +1,7 @@
 use chrono::DateTime;
 use chrono_tz::Tz;
 use ijson::{IArray, INumber, IObject, IString, IValue};
+#[cfg(feature = "pyo3")]
 use pyo3::{
     exceptions::{PyTypeError, PyValueError},
     prelude::*,
@@ -71,6 +72,7 @@ impl From<Arbitrary> for IValue {
     }
 }
 
+#[cfg(feature = "pyo3")]
 impl<'py> FromPyObject<'py> for Arbitrary {
     fn extract_bound(ob: &Bound<'py, PyAny>) -> PyResult<Self> {
         if let Ok(map_key) = ob.extract::<MapKey>() {
@@ -91,6 +93,7 @@ impl<'py> FromPyObject<'py> for Arbitrary {
     }
 }
 
+#[cfg(feature = "pyo3")]
 impl<'py> IntoPyObject<'py> for Arbitrary {
     type Target = PyAny;
 

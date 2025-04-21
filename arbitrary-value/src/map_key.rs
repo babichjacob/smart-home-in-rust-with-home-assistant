@@ -4,6 +4,7 @@ use chrono::DateTime;
 use chrono_tz::Tz;
 use ijson::IString;
 use itertools::Itertools;
+#[cfg(feature = "pyo3")]
 use pyo3::{
     exceptions::PyTypeError,
     prelude::*,
@@ -41,6 +42,7 @@ impl Display for MapKey {
     }
 }
 
+#[cfg(feature = "pyo3")]
 impl<'py> FromPyObject<'py> for MapKey {
     fn extract_bound(ob: &Bound<'py, PyAny>) -> PyResult<Self> {
         if let Ok(_none) = ob.downcast::<PyNone>() {
@@ -62,6 +64,7 @@ impl<'py> FromPyObject<'py> for MapKey {
     }
 }
 
+#[cfg(feature = "pyo3")]
 impl<'py> IntoPyObject<'py> for MapKey {
     type Target = PyAny;
 

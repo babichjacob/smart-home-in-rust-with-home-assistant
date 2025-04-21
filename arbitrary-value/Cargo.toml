@@ -1,0 +1,17 @@
+[package]
+name = "arbitrary-value"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+pyo3 = ["dep:pyo3"]
+
+[dependencies]
+chrono = { workspace = true }
+chrono-tz = { workspace = true }
+derive_more = { workspace = true }
+ijson = "0.1.4"
+itertools = "0.14.0"
+snafu = { workspace = true }
+
+pyo3 = { workspace = true, optional = true, features = ["chrono", "chrono-tz"] }
