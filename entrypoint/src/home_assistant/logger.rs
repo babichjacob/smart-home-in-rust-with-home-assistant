@@ -1,9 +1,7 @@
+use crate::python_utils::{detach, validate_type_by_name};
+use arbitrary_value::{arbitrary::Arbitrary, map::Map};
+use once_cell::sync::OnceCell;
 use pyo3::{prelude::*, types::PyTuple};
-
-use crate::{
-    arbitrary::{arbitrary::Arbitrary, map::Map},
-    python_utils::{detach, validate_type_by_name},
-};
 
 #[derive(Debug)]
 pub struct HassLogger(Py<PyAny>);
@@ -55,8 +53,12 @@ pub struct LogData<ExcInfo> {
 
 impl HassLogger {
     pub fn new(py: Python<'_>, name: &str) -> PyResult<Self> {
-        let logging = py.import("logging")?;
-        let logger = logging.call_method1("getLogger", (name,))?;
+        static LOGGING_MODULE: OnceCell<Py<PyModule>> = OnceCell::new();
+
+        let logging_module = LOGGING_MODULE
+            .get_or_try_init(|| Result::<_, PyErr>::Ok(py.import("logging")?.unbind()))?
+            .bind(py);
+        let logger = logging_module.call_method1("getLogger", (name,))?;
 
         Ok(logger.extract()?)
     }

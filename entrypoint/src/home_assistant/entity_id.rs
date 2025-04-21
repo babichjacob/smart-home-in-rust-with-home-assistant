@@ -59,7 +59,7 @@ impl<'py> FromPyObject<'py> for EntityId {
     }
 }
 
-impl<'py> IntoPyObject<'py> for &EntityId {
+impl<'py> IntoPyObject<'py> for EntityId {
     type Target = PyString;
     type Output = Bound<'py, Self::Target>;
     type Error = Infallible;

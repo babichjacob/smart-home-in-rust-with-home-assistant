@@ -5,7 +5,7 @@ use crate::{
     python_utils::{detach, validate_type_by_name},
 };
 
-use super::state::State;
+use super::state_object::StateObject;
 
 #[derive(Debug)]
 pub struct StateMachine(Py<PyAny>);
@@ -21,11 +21,16 @@ impl<'py> FromPyObject<'py> for StateMachine {
 }
 
 impl StateMachine {
-    pub fn get<Attributes: for<'py> FromPyObject<'py>, ContextEvent: for<'py> FromPyObject<'py>>(
+    pub fn get<
+        'py,
+        State: FromPyObject<'py>,
+        Attributes: FromPyObject<'py>,
+        ContextEvent: FromPyObject<'py>,
+    >(
         &self,
-        py: Python<'_>,
+        py: Python<'py>,
         entity_id: EntityId,
-    ) -> PyResult<Option<State<Attributes, ContextEvent>>> {
+    ) -> PyResult<Option<StateObject<State, Attributes, ContextEvent>>> {
         let args = (entity_id.to_string(),);
         let state = self.0.call_method1(py, "get", args)?;
         state.extract(py)

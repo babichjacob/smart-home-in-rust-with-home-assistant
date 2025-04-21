@@ -4,7 +4,7 @@ use pyo3::prelude::*;
 
 use crate::python_utils::{detach, validate_type_by_name};
 
-use super::state_machine::StateMachine;
+use super::{service_registry::ServiceRegistry, state_machine::StateMachine};
 
 #[derive(Debug)]
 pub struct HomeAssistant(Py<PyAny>);
@@ -51,5 +51,10 @@ impl HomeAssistant {
     pub fn states(&self, py: Python<'_>) -> Result<StateMachine, PyErr> {
         let states = self.0.getattr(py, "states")?;
         states.extract(py)
+    }
+
+    pub fn services(&self, py: Python<'_>) -> Result<ServiceRegistry, PyErr> {
+        let services = self.0.getattr(py, "services")?;
+        services.extract(py)
     }
 }

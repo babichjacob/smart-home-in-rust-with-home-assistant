@@ -1,6 +1,6 @@
 use pyo3::{exceptions::PyTypeError, prelude::*};
 
-/// Create a GIL-independent reference (similar to [`Arc`](std::sync::Arc))
+/// Create a GIL-independent reference
 pub fn detach<T>(bound: &Bound<T>) -> Py<T> {
     let py = bound.py();
     bound.as_unbound().clone_ref(py)

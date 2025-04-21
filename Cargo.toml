@@ -1,6 +1,11 @@
 [workspace]
 members = [
     "arbitrary-value",
+    "driver/kasa",
+    "emitter-and-signal",
+    "entrypoint",
+    "protocol",
+]
 resolver = "2"
 
 [workspace.dependencies]
