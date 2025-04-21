@@ -1,0 +1,9 @@
+[package]
+name = "emitter-and-signal"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+deranged = { workspace = true }
+ext-trait = "2.0.0"
+tokio = { workspace = true, features = ["sync"] }
