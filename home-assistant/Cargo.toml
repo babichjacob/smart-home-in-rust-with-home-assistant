@@ -10,7 +10,6 @@ tracing = ["dep:tracing"]
 [dependencies]
 arbitrary-value = { path = "../arbitrary-value", features = ["pyo3"] }
 chrono = { workspace = true }
-chrono-tz = { workspace = true }
 derive_more = { workspace = true, features = [
     "display",
     "from",

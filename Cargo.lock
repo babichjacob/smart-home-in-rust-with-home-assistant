@@ -648,7 +648,6 @@ version = "0.1.0"
 dependencies = [
  "arbitrary-value",
  "chrono",
- "chrono-tz",
  "derive_more",
  "emitter-and-signal",
  "once_cell",
