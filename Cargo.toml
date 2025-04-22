@@ -10,6 +10,9 @@ members = [
 ]
 resolver = "2"
 
+[workspace.package]
+license = "Unlicense"
+
 [workspace.dependencies]
 backon = "1.5"
 chrono = "0.4.40"
