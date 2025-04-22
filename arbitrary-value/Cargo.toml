@@ -12,6 +12,5 @@ chrono-tz = { workspace = true }
 derive_more = { workspace = true }
 ijson = "0.1.4"
 itertools = "0.14.0"
-snafu = { workspace = true }
-
 pyo3 = { workspace = true, optional = true, features = ["chrono", "chrono-tz"] }
+snafu = { workspace = true }
