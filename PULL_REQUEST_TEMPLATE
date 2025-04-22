@@ -1,0 +1,41 @@
+# Prior Issue
+<!--
+Please identify the tracked issue relating to this matter, or create one first if it does not yet exist.
+Write it like e.g. 
+* `closes #567` (so that the issue is linked by keyword https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue),
+* `partially addresses #12 and #345`
+->
+
+
+# Future Improvements
+<!--
+Do you believe there's any more work to be done to round out this contribution? Perhaps documentation or testing?
+Any limitations in the feature or solution offered in this code? Anything else you want to say about the contribution?
+Or, like if this is a trivial change, of course you can just say succinctly that this is everything.
+-->
+
+
+---
+
+<!--
+Read, ensure you agree with, and affirm the copyright waiver below by keeping it in this pull request description.
+If you do not agree or cannot or will not fulfill the requirements described, then you must not include it in your contribution. You are recommended not to attempt to submit the contribution to this project in that case.
+-->
+
+# Copyright waiver for <https://gitea.katniss.top/jacob/smart-home-in-rust-with-home-assistant> (mirrored at <https://github.com/babichjacob/smart-home-in-rust-with-home-assistant>)
+
+I dedicate any and all copyright interest in this software to the
+public domain. I make this dedication for the benefit of the public at
+large and to the detriment of my heirs and successors. I intend this
+dedication to be an overt act of relinquishment in perpetuity of all
+present and future rights to this software under copyright law.
+
+To the best of my knowledge and belief, my contributions are either
+originally authored by me or are derived from prior works which I have
+verified are also in the public domain and are not subject to claims
+of copyright by other parties.
+
+To the best of my knowledge and belief, no individual, business,
+organization, government, or other entity has any copyright interest
+in my contributions, and I affirm that I will not make contributions
+that are otherwise encumbered.
