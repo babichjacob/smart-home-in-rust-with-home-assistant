@@ -1,16 +1,14 @@
-use std::{convert::Infallible, io, net::SocketAddr, num::NonZero, time::Duration};
-
-use backoff::{ExponentialBackoff, ExponentialBackoffBuilder};
+use crate::messages::{GetSysInfo, GetSysInfoResponse, LB130USSys, SysInfo};
+use backon::{FibonacciBuilder, Retryable};
 use protocol::light::{Kelvin, KelvinLight, Light, Rgb, RgbLight};
 use snafu::{ResultExt, Snafu};
+use std::{convert::Infallible, io, net::SocketAddr, num::NonZero, time::Duration};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter},
-    net::{TcpListener, TcpSocket, TcpStream},
-    sync::{mpsc, oneshot, OnceCell},
+    net::TcpStream,
+    sync::{mpsc, oneshot},
     time::timeout,
 };
-
-use crate::messages::{GetSysInfo, GetSysInfoResponse, LB130USSys, SysInfo};
 
 struct XorEncryption<const INITIAL_KEY: u8>;
 
@@ -90,21 +88,19 @@ async fn lb130us_actor(
                     "connecting for a first time / reconnecting after having gone idle..."
                 );
 
-                match backoff::future::retry_notify(
-                    ExponentialBackoff::default(),
-                    || async {
-                        let stream = TcpStream::connect(addr).await?;
-                        let (reader, writer) = stream.into_split();
+                match (|| async {
+                    let stream = TcpStream::connect(addr).await?;
+                    let (reader, writer) = stream.into_split();
 
-                        let buf_reader = BufReader::new(reader);
-                        let buf_writer = BufWriter::new(writer);
+                    let buf_reader = BufReader::new(reader);
+                    let buf_writer = BufWriter::new(writer);
 
-                        Ok((buf_reader, buf_writer))
-                    },
-                    |err, duration| {
-                        tracing::error!(?err, ?duration);
-                    },
-                )
+                    Ok((buf_reader, buf_writer))
+                })
+                .retry(FibonacciBuilder::default())
+                .notify(|err: &io::Error, duration| {
+                    tracing::error!(?err, ?duration);
+                })
                 .await
                 {
                     Ok(connection) => (connection_cell.insert(connection), message),

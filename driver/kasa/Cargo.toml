@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-backoff = { workspace = true, features = ["tokio"] }
+backon = { workspace = true }
 deranged = { workspace = true }
 mac_address = { version = "1.1.8", features = ["serde"] }
 protocol = { path = "../../protocol" }

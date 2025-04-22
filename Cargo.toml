@@ -11,7 +11,7 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
-backoff = "0.4.0"
+backon = "1.5"
 chrono = "0.4.40"
 chrono-tz = "0.10.1"
 deranged = "0.4"
