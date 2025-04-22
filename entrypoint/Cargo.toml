@@ -17,8 +17,6 @@ axum = { version = "0.8.1", default-features = false, features = [
     "http1",
     "tokio",
 ] }
-chrono = { workspace = true }
-chrono-tz = { workspace = true }
 deranged = { workspace = true, features = ["serde"] }
 driver-kasa = { path = "../driver/kasa" }
 emitter-and-signal = { path = "../emitter-and-signal" }

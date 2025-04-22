@@ -1691,8 +1691,6 @@ dependencies = [
  "arc-swap",
  "async-gate",
  "axum",
- "chrono",
- "chrono-tz",
  "deranged",
  "driver-kasa",
  "emitter-and-signal",
