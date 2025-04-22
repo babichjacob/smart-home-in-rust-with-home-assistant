@@ -1,7 +1,7 @@
-use crate::python_utils::{detach, validate_type_by_name};
 use arbitrary_value::{arbitrary::Arbitrary, map::Map};
 use once_cell::sync::OnceCell;
 use pyo3::{prelude::*, types::PyTuple};
+use python_utils::{detach, validate_type_by_name};
 
 #[derive(Debug)]
 pub struct HassLogger(Py<PyAny>);

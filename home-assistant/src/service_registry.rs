@@ -1,8 +1,6 @@
-use pyo3::prelude::*;
-
-use crate::python_utils::{detach, validate_type_by_name};
-
 use super::{event::context::context::Context, service::IntoServiceCall};
+use pyo3::prelude::*;
+use python_utils::{detach, validate_type_by_name};
 
 #[derive(Debug)]
 pub struct ServiceRegistry(Py<PyAny>);

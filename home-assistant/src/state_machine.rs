@@ -1,11 +1,7 @@
-use pyo3::prelude::*;
-
-use crate::{
-    home_assistant::entity_id::EntityId,
-    python_utils::{detach, validate_type_by_name},
-};
-
+use super::entity_id::EntityId;
 use super::state_object::StateObject;
+use pyo3::prelude::*;
+use python_utils::{detach, validate_type_by_name};
 
 #[derive(Debug)]
 pub struct StateMachine(Py<PyAny>);

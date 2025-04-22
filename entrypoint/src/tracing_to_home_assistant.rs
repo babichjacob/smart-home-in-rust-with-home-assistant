@@ -7,7 +7,7 @@ use tracing::{
 };
 use tracing_subscriber::{layer::Context, Layer};
 
-use crate::home_assistant::logger::{HassLogger, LogData};
+use home_assistant::logger::{HassLogger, LogData};
 
 pub struct TracingToHomeAssistant;
 

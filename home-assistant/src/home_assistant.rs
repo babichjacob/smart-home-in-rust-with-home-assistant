@@ -2,7 +2,7 @@ use std::convert::Infallible;
 
 use pyo3::prelude::*;
 
-use crate::python_utils::{detach, validate_type_by_name};
+use python_utils::{detach, validate_type_by_name};
 
 use super::{service_registry::ServiceRegistry, state_machine::StateMachine};
 

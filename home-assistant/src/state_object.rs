@@ -2,7 +2,7 @@ use super::{
     event::{context::context::Context, specific::state_changed},
     home_assistant::HomeAssistant,
 };
-use crate::home_assistant::entity_id::EntityId;
+use crate::entity_id::EntityId;
 use chrono::{DateTime, Utc};
 use emitter_and_signal::signal::Signal;
 use once_cell::sync::OnceCell;
@@ -62,6 +62,7 @@ impl<
                         let callback =
                             move |args: &Bound<'_, PyTuple>,
                                   _kwargs: Option<&Bound<'_, PyDict>>| {
+                                #[cfg(feature = "tracing")]
                                 tracing::debug!("calling the closure");
 
                                 if let Ok((event,)) = args.extract::<(
@@ -77,6 +78,7 @@ impl<
                                 )>() {
                                     let new_state = event.data.new_state;
 
+                                    #[cfg(feature = "tracing")]
                                     tracing::debug!("sending a new state"); // TODO: remove
                                     new_state_sender.try_send(new_state).unwrap();
                                 }
@@ -89,38 +91,47 @@ impl<
                         );
                         event_module.call_method1("async_track_state_change_event", args)?
                     };
+                    #[cfg(feature = "tracing")]
                     tracing::debug!(?untrack, "as any");
 
                     let is_callable = untrack.is_callable();
+                    #[cfg(feature = "tracing")]
                     tracing::debug!(?is_callable);
 
                     // let untrack = untrack.downcast_into::<PyFunction>()?;
                     // tracing::debug!(?untrack, "as downcast");
 
                     let untrack = untrack.unbind();
+                    #[cfg(feature = "tracing")]
                     tracing::debug!(?untrack, "as unbound");
 
                     Ok(untrack)
                 });
 
                 if let Ok(untrack) = untrack {
+                    #[cfg(feature = "tracing")]
                     tracing::debug!("untrack is ok, going to wait for the next relevant event...");
                     loop {
                         select! {
                             biased;
                             _ = publisher.all_unsubscribed() => {
+                                #[cfg(feature = "tracing")]
                                 tracing::debug!("calling untrack");
                                 let res = Python::with_gil(|py| untrack.call0(py));
+
+                                #[cfg(feature = "tracing")]
                                 tracing::debug!(?res);
                                 break;
                             }
                             new_state = new_state_receiver.recv() => {
                                 match new_state {
                                     Some(new_state) => {
+                                        #[cfg(feature = "tracing")]
                                         tracing::debug!("publishing new state");
                                         publisher.publish(new_state.map(Arc::new))
                                     },
                                     None => {
+                                        #[cfg(feature = "tracing")]
                                         tracing::debug!("channel dropped");
                                         break
                                     },
@@ -129,6 +140,7 @@ impl<
                         }
                     }
                 } else {
+                    #[cfg(feature = "tracing")]
                     tracing::debug!("untrack is err");
                 }
             }

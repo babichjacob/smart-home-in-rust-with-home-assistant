@@ -3,7 +3,7 @@ use pyo3::prelude::*;
 use snafu::{ResultExt, Snafu};
 use state::LightState;
 
-use crate::home_assistant::state::HomeAssistantState;
+use crate::state::HomeAssistantState;
 
 use super::{
     domain::Domain, entity_id::EntityId, home_assistant::HomeAssistant, object_id::ObjectId,

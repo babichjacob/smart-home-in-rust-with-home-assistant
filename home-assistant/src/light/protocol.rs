@@ -1,6 +1,6 @@
 use super::service::{turn_off::TurnOff, turn_on::TurnOn};
 use super::{state::LightState, GetStateObjectError, HomeAssistantLight};
-use crate::home_assistant::{
+use crate::{
     event::context::context::Context,
     state::{ErrorState, HomeAssistantState, UnexpectedState},
 };
@@ -67,6 +67,7 @@ impl Light for HomeAssistantLight {
             .await?;
 
         // TODO
+        #[cfg(feature = "tracing")]
         tracing::info!(?service_response);
 
         Ok(())
@@ -91,6 +92,10 @@ impl Light for HomeAssistantLight {
                 false,
             )
             .await?;
+
+        // TODO
+        #[cfg(feature = "tracing")]
+        tracing::info!(?service_response);
 
         Ok(())
     }

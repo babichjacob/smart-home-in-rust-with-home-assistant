@@ -18,8 +18,6 @@ use tracing_subscriber::{
 };
 use tracing_to_home_assistant::TracingToHomeAssistant;
 
-mod home_assistant;
-mod python_utils;
 mod tracing_to_home_assistant;
 
 shadow!(build_info);

@@ -4,7 +4,9 @@ members = [
     "driver/kasa",
     "emitter-and-signal",
     "entrypoint",
+    "home-assistant",
     "protocol",
+    "python-utils",
 ]
 resolver = "2"
 
@@ -12,7 +14,7 @@ resolver = "2"
 backoff = "0.4.0"
 chrono = "0.4.40"
 chrono-tz = "0.10.1"
-deranged = "0.4.1"
+deranged = "0.4"
 derive_more = "2.0.1"
 snafu = "0.8.5"
 tokio = "1.32.0"

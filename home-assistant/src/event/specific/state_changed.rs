@@ -1,7 +1,7 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
-use crate::home_assistant::{entity_id::EntityId, state_object::StateObject};
+use crate::{entity_id::EntityId, state_object::StateObject};
 
 #[derive(Debug, Clone)]
 pub struct Type;
