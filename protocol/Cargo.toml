@@ -4,6 +4,16 @@ version = "0.1.0"
 edition = "2021"
 license = { workspace = true }
 
+[features]
+default = []
+serde = ["dep:serde"]
+
 [dependencies]
 deranged = { workspace = true }
 derive_more = { workspace = true }
+ext-trait = { workspace = true }
+palette = { workspace = true }
+snafu = { workspace = true }
+strum = { workspace = true, features = ["derive"] }
+
+serde = { optional = true, workspace = true, features = ["derive"] }
