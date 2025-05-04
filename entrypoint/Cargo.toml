@@ -17,6 +17,7 @@ axum = { version = "0.8.1", default-features = false, features = [
     "http1",
     "tokio",
 ] }
+clap = { version = "4", features = ["derive", "env"] }
 deranged = { workspace = true, features = ["serde"] }
 driver-kasa = { path = "../driver/kasa" }
 emitter-and-signal = { path = "../emitter-and-signal" }
