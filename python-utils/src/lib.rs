@@ -1,4 +1,28 @@
-use pyo3::{exceptions::PyTypeError, prelude::*};
+use std::convert::Infallible;
+
+use pyo3::{exceptions::PyTypeError, prelude::*, types::PyNone};
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct IsNone;
+
+impl<'py> FromPyObject<'py> for IsNone {
+    fn extract_bound(ob: &Bound<'py, PyAny>) -> PyResult<Self> {
+        ob.downcast::<PyNone>()?;
+        Ok(IsNone)
+    }
+}
+
+impl<'py> IntoPyObject<'py> for IsNone {
+    type Target = PyNone;
+
+    type Output = Borrowed<'py, 'py, Self::Target>;
+
+    type Error = Infallible;
+
+    fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
+        Ok(PyNone::get(py))
+    }
+}
 
 /// Create a GIL-independent reference
 pub fn detach<T>(bound: &Bound<T>) -> Py<T> {
