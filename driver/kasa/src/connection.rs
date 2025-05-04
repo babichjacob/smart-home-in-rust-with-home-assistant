@@ -1,10 +1,14 @@
-use crate::messages::{GetSysInfo, GetSysInfoResponse, LB130USSys, SysInfo};
+use crate::messages::{
+    GetSysInfo, GetSysInfoResponse, LB130USSys, LightState, Off, On, SetLightLastOn, SetLightOff,
+    SetLightState, SetLightStateArgs, SetLightStateResponse, SetLightTo, SysInfo,
+};
 use backon::{FibonacciBuilder, Retryable};
-use protocol::light::{Kelvin, KelvinLight, Light, Rgb, RgbLight};
+
+use serde::{Deserialize, Serialize};
 use snafu::{ResultExt, Snafu};
-use std::{convert::Infallible, io, net::SocketAddr, num::NonZero, time::Duration};
+use std::{io, net::SocketAddr, num::NonZero, time::Duration};
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter},
+    io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, BufReader, BufWriter},
     net::TcpStream,
     sync::{mpsc, oneshot},
     time::timeout,
@@ -51,11 +55,23 @@ pub enum CommunicationError {
     WrongDevice,
 }
 
+fn should_try_reconnecting(communication_error: &CommunicationError) -> bool {
+    matches!(
+        communication_error,
+        CommunicationError::WriteError { .. } | CommunicationError::ReadError { .. }
+    )
+}
+
 #[derive(Debug)]
 enum LB130USMessage {
     GetSysInfo(oneshot::Sender<Result<LB130USSys, CommunicationError>>),
+    SetLightState(
+        SetLightStateArgs,
+        oneshot::Sender<Result<SetLightStateResponse, CommunicationError>>,
+    ),
 }
 
+#[tracing::instrument(skip(messages))]
 async fn lb130us_actor(
     addr: SocketAddr,
     disconnect_after_idle: Duration,
@@ -116,84 +132,103 @@ async fn lb130us_actor(
 
         tracing::info!("yay connected and got a message");
 
-        // TODO: do something
         match message {
             LB130USMessage::GetSysInfo(callback) => {
-                tracing::info!("going to try to get sys info for you...");
+                let res = handle_get_sysinfo(writer, reader).await;
 
-                // TODO: extract to its own function
-                let outgoing = GetSysInfo;
-                let outgoing = match serde_json::to_vec(&outgoing) {
-                    Ok(outgoing) => outgoing,
-                    Err(err) => {
-                        // TODO (continued) instead of doing stuff like this
-                        let _ =
-                            callback.send(Err(CommunicationError::SerializeError { source: err }));
-                        continue;
-                    }
-                };
-
-                tracing::info!(?outgoing);
-
-                let encrypted_outgoing = into_encrypted(outgoing);
-
-                tracing::info!(?encrypted_outgoing);
-
-                if let Err(err) = writer.write_all(&encrypted_outgoing).await {
-                    connection_cell.take();
-                    let _ = callback.send(Err(CommunicationError::WriteError { source: err }));
-                    continue;
-                }
-
-                if let Err(err) = writer.flush().await {
-                    connection_cell.take();
-                    let _ = callback.send(Err(CommunicationError::WriteError { source: err }));
-                    continue;
-                }
-                tracing::info!("sent it, now about to try to get a response");
-
-                let incoming_length = match reader.read_u32().await {
-                    Ok(incoming_length) => incoming_length,
-                    Err(err) => {
+                if let Err(communication_error) = &res {
+                    if should_try_reconnecting(communication_error) {
                         connection_cell.take();
-                        let _ = callback.send(Err(CommunicationError::ReadError { source: err }));
-                        continue;
                     }
-                };
-                tracing::info!(?incoming_length);
-
-                let mut incoming_message = Vec::new();
-                incoming_message.resize(incoming_length as usize, 0);
-                if let Err(err) = reader.read_exact(&mut incoming_message).await {
-                    connection_cell.take();
-                    let _ = callback.send(Err(CommunicationError::ReadError { source: err }));
-                    continue;
                 }
 
-                XorEncryption::<171>::decrypt_in_place(&mut incoming_message);
-                tracing::info!(?incoming_message);
+                let _ = callback.send(res);
+            }
+            LB130USMessage::SetLightState(args, callback) => {
+                let res = handle_set_light_state(writer, reader, args).await;
 
-                let response: GetSysInfoResponse = match serde_json::from_slice(&incoming_message) {
-                    Ok(response) => response,
-                    Err(err) => {
-                        let _ = callback
-                            .send(Err(CommunicationError::DeserializeError { source: err }));
-                        continue;
+                if let Err(communication_error) = &res {
+                    if should_try_reconnecting(communication_error) {
+                        connection_cell.take();
                     }
-                };
-                tracing::info!(?response);
+                }
 
-                let SysInfo::LB130US(lb130us) = response.system.get_sysinfo else {
-                    let _ = callback.send(Err(CommunicationError::WrongDevice));
-                    continue;
-                };
-                tracing::info!(?lb130us);
-
-                let _ = callback.send(Ok(lb130us));
-                tracing::info!("cool, gave a response! onto the next message!");
+                let _ = callback.send(res);
             }
         }
     }
+}
+
+#[tracing::instrument(skip(writer, reader, request))]
+async fn send_request<
+    AW: AsyncWrite + Unpin,
+    AR: AsyncRead + Unpin,
+    Request: Serialize,
+    Response: for<'de> Deserialize<'de>,
+>(
+    writer: &mut AW,
+    reader: &mut AR,
+    request: &Request,
+) -> Result<Response, CommunicationError> {
+    let outgoing = serde_json::to_vec(request).context(SerializeSnafu)?;
+    tracing::info!(?outgoing);
+
+    let encrypted_outgoing = into_encrypted(outgoing);
+    tracing::info!(?encrypted_outgoing);
+
+    writer
+        .write_all(&encrypted_outgoing)
+        .await
+        .context(WriteSnafu)?;
+    writer.flush().await.context(WriteSnafu)?;
+    tracing::info!("sent it, now about to try to get a response");
+
+    let incoming_length = reader.read_u32().await.context(ReadSnafu)?;
+    tracing::info!(?incoming_length);
+
+    let mut incoming_message = Vec::new();
+    incoming_message.resize(incoming_length as usize, 0);
+    reader
+        .read_exact(&mut incoming_message)
+        .await
+        .context(ReadSnafu)?;
+
+    XorEncryption::<171>::decrypt_in_place(&mut incoming_message);
+    tracing::info!(?incoming_message);
+
+    let response_as_json: serde_json::Value =
+        serde_json::from_slice(&incoming_message).context(DeserializeSnafu)?;
+    tracing::info!(?response_as_json);
+
+    let response = Response::deserialize(response_as_json).context(DeserializeSnafu)?;
+
+    Ok(response)
+}
+
+#[tracing::instrument(skip(writer, reader))]
+async fn handle_get_sysinfo<AW: AsyncWrite + Unpin, AR: AsyncRead + Unpin>(
+    writer: &mut AW,
+    reader: &mut AR,
+) -> Result<LB130USSys, CommunicationError> {
+    let request = GetSysInfo;
+    let response: GetSysInfoResponse = send_request(writer, reader, &request).await?;
+
+    let SysInfo::LB130US(lb130us) = response.system.get_sysinfo else {
+        return Err(CommunicationError::WrongDevice);
+    };
+    tracing::info!(?lb130us);
+
+    Ok(lb130us)
+}
+
+#[tracing::instrument(skip(writer, reader))]
+async fn handle_set_light_state<AW: AsyncWrite + Unpin, AR: AsyncRead + Unpin>(
+    writer: &mut AW,
+    reader: &mut AR,
+    args: SetLightStateArgs,
+) -> Result<SetLightStateResponse, CommunicationError> {
+    let request = SetLightState(args);
+    send_request(writer, reader, &request).await
 }
 
 #[derive(Debug, Clone)]
@@ -225,52 +260,19 @@ impl LB130USHandle {
             .map_err(|_| HandleError::Dead)?
             .context(CommunicationSnafu)
     }
-}
 
-impl Light for LB130USHandle {
-    type IsOnError = Infallible; // TODO
-
-    async fn is_on(&self) -> Result<bool, Self::IsOnError> {
-        todo!()
-    }
-
-    type IsOffError = Infallible; // TODO
-
-    async fn is_off(&self) -> Result<bool, Self::IsOffError> {
-        todo!()
-    }
-
-    type TurnOnError = Infallible; // TODO
-
-    async fn turn_on(&mut self) -> Result<(), Self::TurnOnError> {
-        todo!()
-    }
-
-    type TurnOffError = Infallible; // TODO
-
-    async fn turn_off(&mut self) -> Result<(), Self::TurnOffError> {
-        todo!()
-    }
-
-    type ToggleError = Infallible; // TODO
-
-    async fn toggle(&mut self) -> Result<(), Self::ToggleError> {
-        todo!()
-    }
-}
-
-impl KelvinLight for LB130USHandle {
-    type TurnToKelvinError = Infallible; // TODO
-
-    async fn turn_to_kelvin(&mut self, temperature: Kelvin) -> Result<(), Self::TurnToKelvinError> {
-        todo!()
-    }
-}
-
-impl RgbLight for LB130USHandle {
-    type TurnToRgbError = Infallible; // TODO
-
-    async fn turn_to_rgb(&mut self, color: Rgb) -> Result<(), Self::TurnToRgbError> {
-        todo!()
+    pub async fn set_light_state(
+        &self,
+        args: SetLightStateArgs,
+    ) -> Result<SetLightStateResponse, HandleError> {
+        let (sender, receiver) = oneshot::channel();
+        self.sender
+            .send(LB130USMessage::SetLightState(args, sender))
+            .await
+            .map_err(|_| HandleError::Dead)?;
+        receiver
+            .await
+            .map_err(|_| HandleError::Dead)?
+            .context(CommunicationSnafu)
     }
 }

@@ -1,7 +1,8 @@
-use std::{collections::BTreeMap, fmt::Display, str::FromStr};
+use std::{collections::BTreeMap, fmt::Display, str::FromStr, time::Duration};
 
 use deranged::{RangedU16, RangedU8};
 use mac_address::{MacAddress, MacParseError};
+use palette::{FromColor, Hsv};
 use serde::{ser::SerializeMap, Deserialize, Deserializer, Serialize};
 use serde_repr::Deserialize_repr;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
@@ -36,38 +37,38 @@ pub struct GetSysInfoResponseSystem {
 
 #[derive(Debug, Deserialize)]
 pub struct CommonSysInfo {
-    active_mode: ActiveMode,
-    alias: String,
-    ctrl_protocols: CtrlProtocols,
-    description: String,
-    dev_state: DevState,
+    pub active_mode: ActiveMode,
+    pub alias: String,
+    pub ctrl_protocols: CtrlProtocols,
+    pub description: String,
+    pub dev_state: DevState,
     #[serde(rename = "deviceId")]
-    device_id: DeviceId,
-    disco_ver: String,
-    err_code: i32, // No idea
-    heapsize: u64, // No idea
+    pub device_id: DeviceId,
+    pub disco_ver: String,
+    pub err_code: i32, // No idea
+    pub heapsize: u64, // No idea
     #[serde(rename = "hwId")]
-    hw_id: HardwareId,
-    hw_ver: String,
-    is_color: IsColor,
-    is_dimmable: IsDimmable,
-    is_factory: bool,
-    is_variable_color_temp: IsVariableColorTemp,
-    light_state: LightState,
-    mic_mac: MacAddressWithoutSeparators,
-    mic_type: MicType,
+    pub hw_id: HardwareId,
+    pub hw_ver: String,
+    pub is_color: IsColor,
+    pub is_dimmable: IsDimmable,
+    pub is_factory: bool,
+    pub is_variable_color_temp: IsVariableColorTemp,
+    pub light_state: LightState,
+    pub mic_mac: MacAddressWithoutSeparators,
+    pub mic_type: MicType,
     // model: Model,
     #[serde(rename = "oemId")]
-    oem_id: OemId,
-    preferred_state: Vec<PreferredStateChoice>,
-    rssi: i32,
-    sw_ver: String,
+    pub oem_id: OemId,
+    pub preferred_state: Vec<PreferredStateChoice>,
+    pub rssi: i32,
+    pub sw_ver: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct LB130USSys {
     #[serde(flatten)]
-    sys_info: CommonSysInfo,
+    pub sys_info: CommonSysInfo,
 }
 
 #[derive(Debug, Deserialize)]
@@ -78,9 +79,9 @@ pub enum SysInfo {
 }
 
 #[derive(Debug, Deserialize)]
-struct PreferredStateChoice {
+pub struct PreferredStateChoice {
     #[serde(flatten)]
-    color: Color,
+    pub color: Color,
 }
 
 #[derive(Debug, SerializeDisplay, DeserializeFromStr)]
@@ -162,9 +163,9 @@ enum IsVariableColorTemp {
     VariableColorTemp = 1,
 }
 
-type Percentage = RangedU8<0, 100>;
-type Angle = RangedU16<0, 360>;
-type Kelvin = RangedU16<2500, 9000>;
+pub type Percentage = RangedU8<0, 100>;
+pub type Angle = RangedU16<0, 360>;
+pub type Kelvin = RangedU16<2500, 9000>;
 
 #[derive(Debug, Clone)]
 struct MaybeKelvin(Option<Kelvin>);
@@ -198,11 +199,32 @@ struct RawColor {
     saturation: Percentage,
 }
 
-#[derive(Debug, Clone)]
-struct Hsb {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Hsb {
     hue: Angle,
     saturation: Percentage,
     brightness: Percentage,
+}
+
+impl<S> FromColor<Hsv<S, f64>> for Hsb {
+    fn from_color(hsv: Hsv<S, f64>) -> Self {
+        let (hue, saturation, value) = hsv.into_components();
+
+        let hue = hue.into_positive_degrees();
+        let hue = Angle::new_saturating(hue as u16);
+
+        let saturation = saturation * (Percentage::MAX.get() as f64);
+        let saturation = Percentage::new_saturating(saturation as u8);
+
+        let brightness = value * (Percentage::MAX.get() as f64);
+        let brightness = Percentage::new_saturating(brightness as u8);
+
+        Hsb {
+            hue,
+            saturation,
+            brightness,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -245,26 +267,92 @@ impl<'de> Deserialize<'de> for Color {
     }
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Off;
+
+impl<'de> Deserialize<'de> for Off {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = u8::deserialize(deserializer)?;
+
+        if value == 0 {
+            Ok(Off)
+        } else {
+            Err(serde::de::Error::invalid_value(
+                serde::de::Unexpected::Unsigned(value.into()),
+                &"0",
+            ))
+        }
+    }
+}
+
+impl Serialize for Off {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_u8(0)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub struct On;
+
+impl<'de> Deserialize<'de> for On {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = u8::deserialize(deserializer)?;
+
+        if value == 1 {
+            Ok(On)
+        } else {
+            Err(serde::de::Error::invalid_value(
+                serde::de::Unexpected::Unsigned(value.into()),
+                &"1",
+            ))
+        }
+    }
+}
+
+impl Serialize for On {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_u8(1)
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
-struct LightState {
+#[serde(untagged)]
+pub enum LightState {
+    On {
+        on_off: On,
+        #[serde(flatten)]
+        color: Color,
+        mode: LightStateMode,
+    },
+    Off {
+        on_off: Off,
+        dft_on_state: DftOnState,
+    },
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct DftOnState {
     #[serde(flatten)]
     color: Color,
     mode: LightStateMode,
-    on_off: OnOrOff,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 enum LightStateMode {
     #[serde(rename = "normal")]
     Normal,
-}
-
-#[derive(Debug, Clone, Deserialize_repr)]
-#[repr(u8)]
-#[non_exhaustive]
-enum OnOrOff {
-    Off = 0,
-    On = 1,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -275,3 +363,59 @@ enum MicType {
 
 #[derive(Debug, Clone, Deserialize)]
 struct OemId(pub String);
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SetLightStateArgs {
+    #[serde(flatten)]
+    pub to: SetLightTo,
+    pub transition: Option<Duration>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SetLightOff {
+    pub on_off: Off,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SetLightLastOn {
+    pub on_off: On,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SetLightHsv {
+    pub on_off: On,
+    #[serde(flatten)]
+    pub hsb: Hsb,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(untagged)]
+pub enum SetLightTo {
+    Off(SetLightOff),
+    LastOn(SetLightLastOn),
+    Hsv(SetLightHsv),
+    // TODO: kelvin
+}
+
+#[derive(Debug, Clone, derive_more::From)]
+pub struct SetLightState(pub SetLightStateArgs);
+
+impl Serialize for SetLightState {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let target = "smartlife.iot.smartbulb.lightingservice";
+        let cmd = "transition_light_state";
+        let arg = &self.0;
+
+        let mut top_level_map = serializer.serialize_map(Some(1))?;
+        top_level_map.serialize_entry(target, &BTreeMap::from([(cmd, arg)]))?;
+        top_level_map.end()
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct SetLightStateResponse {
+    // TODO
+}
